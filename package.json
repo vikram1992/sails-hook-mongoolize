@@ -1,0 +1,25 @@
+{
+  "name": "sails-hook-mongoolize",
+  "version": "1.0.0",
+  "description": "Sails mongoose and sequelize implementation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "sails-hook"
+  ],
+  "author": "Aditya Joshi <joshi.aditya402@gmail.com> (https://github.com/fuzzy-coder)",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.6.0",
+    "fs": "0.0.1-security",
+    "mongoose": "^4.13.9",
+    "mysql2": "^1.5.1",
+    "path": "^0.12.7",
+    "sequelize": "^4.31.2"
+  },
+  "sails": {
+    "isHook": true
+  }
+}
