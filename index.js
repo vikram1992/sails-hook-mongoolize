@@ -53,7 +53,16 @@ module.exports = sails => {
                 for (let i = 0; i < files.length; i++) {
                     let modelName = files[i].substring(0, files[i].lastIndexOf('.'));
                     let options = require(appDir + '/api/models/sql/' + files[i]);
-                    global[modelName] = sequelize.define(options.table_name, options.attributes);
+                    let model = sequelize.define(options.table_name, options.attributes);
+                    let classMethods = options.classMethods || [];
+                    let instanceMethods = options.instanceMethods || [];
+                    classMethods.forEach(classMethod=>{
+                        model[classMethod.name] = classMethod;
+                    });
+                    instanceMethods.forEach(instanceMethod=>{
+                        model.prototype[instanceMethod.name] = instanceMethod;
+                    });
+                    global[modelName] = model;
                 }
                 cb(null, {});
             });
