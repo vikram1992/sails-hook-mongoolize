@@ -50,6 +50,7 @@ module.exports = sails => {
             let fs = require('fs');
 
             fs.readdir(appDir + '/api/models/sql', (err, files) => {
+                let modelOptions = [];
                 for (let i = 0; i < files.length; i++) {
                     let modelName = files[i].substring(0, files[i].lastIndexOf('.'));
                     let options = require(appDir + '/api/models/sql/' + files[i]);
@@ -63,6 +64,13 @@ module.exports = sails => {
                         model.prototype[instanceMethod.name] = instanceMethod;
                     });
                     global[modelName] = model;
+                    modelOptions.push({name: modelName, options: options});
+                }
+                for(let i=0; i<modelOptions.length; i++){
+                    let modelAssociation = modelOptions[i].options.associations;
+                    if(modelAssociation && typeof modelAssociation === 'function'){
+                        modelAssociation();
+                    }
                 }
                 cb(null, {});
             });
