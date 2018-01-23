@@ -19,7 +19,7 @@ module.exports = sails => {
 
         initialize(next) {
             let path = require('path');
-            let appDir = path.dirname(require.main.filename);
+            let appDir = sails.config.appPath;
             let async = require('async');
 
             async.parallel([
