@@ -1,6 +1,6 @@
 {
   "name": "sails-hook-mongoolize",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Sails mongoose and sequelize implementation",
   "main": "index.js",
   "scripts": {
