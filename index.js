@@ -2,30 +2,47 @@ module.exports = sails => {
     const Sequelize = require('sequelize');
     const Mongoose = require('mongoose');
     return {
-        configure() {
-            let opts = {
-                define: {
-                    // don't add the timestamp attributes (updatedAt, createdAt)
-                    timestamps: false,
-                    //prevent sequelize from pluralizing table names
-                    freezeTableName: true
-                }
+        defaults() {
+            let defaultConfig = {};
+            defaultConfig[this.identity] = {
+                sequelize: {options: {}},
+                mongoose:{options: {}}
             };
-            let mysqlConfig = sails.config.custom.connection.mysql;
-            global['sequelize'] = new Sequelize('mysql://' + mysqlConfig.username + ':' + mysqlConfig.password + '@' + mysqlConfig.host + ':' + mysqlConfig.port + '/' + mysqlConfig.database, opts);
-            global['mongoose'] = Mongoose.connect(sails.config.custom.connection.mongo.uri, sails.config.custom.connection.mongo.options);
+            return defaultConfig;
+        },
 
+        configure() {
+            let mongoolizeConfig = sails.config.mongoolize;
+
+            let mysqlConfig = mongoolizeConfig.sequelize;
+
+            let mongoConfig = mongoolizeConfig.mongoose;
+
+            if(mysqlConfig.username && mysqlConfig.host && mysqlConfig.database){
+                global['sequelize'] = new Sequelize('mysql://' + mysqlConfig.username + ':' + mysqlConfig.password + '@' + mysqlConfig.host + ':' + mysqlConfig.port + '/' + mysqlConfig.database, mysqlConfig.options);
+            }
+
+            if(mongoolizeConfig.uri){
+                global['mongoose'] = Mongoose.connect(mongoConfig.uri, mongoolizeConfig.options);
+            }
         },
 
         initialize(next) {
-            let path = require('path');
+            let path = require('fs');
             let appDir = sails.config.appPath;
             let async = require('async');
 
-            async.parallel([
-                this.initializeMongo.bind(this.initializeMongo, appDir),
-                this.initializeSql.bind(this.initializeSql, appDir)
-            ], function (err, results) {
+            let tasks = [];
+
+            if(path.existsSync(appDir + '/api/models/mongo')){
+                tasks.push(this.initializeMongo.bind(this.initializeMongo, appDir + '/api/models/mongo/'))
+            }
+
+            if(path.existsSync(appDir + '/api/models/mysql')){
+                tasks.push(this.initializeSql.bind(this.initializeMongo, appDir + '/api/models/mysql/'))
+            }
+
+            async.parallel(tasks, function (err, results) {
                 if (err) return next(err);
 
                 next();
@@ -36,11 +53,12 @@ module.exports = sails => {
         initializeMongo(appDir, cb) {
             let fs = require('fs');
 
-            fs.readdir(appDir + '/api/models/mongo', (err, files) => {
+            fs.readdir(appDir, (err, files) => {
                 for (let i = 0; i < files.length; i++) {
                     let modelName = files[i].substring(0, files[i].lastIndexOf('.'));
-                    let options = require(appDir + '/api/models/mongo/' + files[i]);
+                    let options = require(appDir + files[i]);
                     global[modelName] = Mongoose.model(options.document_name, options.attributes);
+                    sails.log.info(`Loaded Mongoose Model ::: ${modelName}`);
                 }
                 cb(null, {});
             });
@@ -49,12 +67,13 @@ module.exports = sails => {
         initializeSql(appDir, cb) {
             let fs = require('fs');
 
-            fs.readdir(appDir + '/api/models/sql', (err, files) => {
+            fs.readdir(appDir, (err, files) => {
                 let modelOptions = [];
                 for (let i = 0; i < files.length; i++) {
                     let modelName = files[i].substring(0, files[i].lastIndexOf('.'));
-                    let options = require(appDir + '/api/models/sql/' + files[i]);
+                    let options = require(appDir + files[i]);
                     let model = sequelize.define(options.table_name, options.attributes);
+                    sails.log.info(`Loaded Sequelize Model ::: ${modelName}`);
                     let classMethods = options.classMethods || [];
                     let instanceMethods = options.instanceMethods || [];
                     classMethods.forEach(classMethod=>{
@@ -79,5 +98,4 @@ module.exports = sails => {
 
     };
 };
-
 
