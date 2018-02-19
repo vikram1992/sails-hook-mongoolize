@@ -22,8 +22,8 @@ module.exports = sails => {
                 global['sequelize'] = new Sequelize('mysql://' + mysqlConfig.username + ':' + mysqlConfig.password + '@' + mysqlConfig.host + ':' + mysqlConfig.port + '/' + mysqlConfig.database, mysqlConfig.options);
             }
 
-            if(mongoolizeConfig.uri){
-                global['mongoose'] = Mongoose.connect(mongoConfig.uri, mongoolizeConfig.options);
+            if(mongoConfig.uri){
+                global['mongoose'] = Mongoose.connect(mongoConfig.uri, mongoConfig.options);
             }
         },
 
