@@ -1,12 +1,15 @@
+const SequelizeErrorCodeTemplate = require('./lib/SequelizeErrorCodeTemplate');
+
 module.exports = sails => {
     const Sequelize = require('sequelize');
     const Mongoose = require('mongoose');
+    const meld = require('meld');
     return {
         defaults() {
             let defaultConfig = {};
             defaultConfig[this.identity] = {
-                sequelize: {options: {}},
-                mongoose:{options: {}}
+                sequelize: { options: {} },
+                mongoose: { options: {} }
             };
             return defaultConfig;
         },
@@ -18,11 +21,11 @@ module.exports = sails => {
 
             let mongoConfig = mongoolizeConfig.mongoose;
 
-            if(mysqlConfig.username && mysqlConfig.host && mysqlConfig.database){
+            if (mysqlConfig.username && mysqlConfig.host && mysqlConfig.database) {
                 global['sequelize'] = new Sequelize('mysql://' + mysqlConfig.username + ':' + mysqlConfig.password + '@' + mysqlConfig.host + ':' + mysqlConfig.port + '/' + mysqlConfig.database, mysqlConfig.options);
             }
 
-            if(mongoConfig.uri){
+            if (mongoConfig.uri) {
                 global['mongoose'] = Mongoose.connect(mongoConfig.uri, mongoConfig.options);
             }
         },
@@ -34,11 +37,11 @@ module.exports = sails => {
 
             let tasks = [];
 
-            if(path.existsSync(appDir + '/api/models/mongo')){
+            if (path.existsSync(appDir + '/api/models/mongo')) {
                 tasks.push(this.initializeMongo.bind(this.initializeMongo, appDir + '/api/models/mongo/'))
             }
 
-            if(path.existsSync(appDir + '/api/models/mysql')){
+            if (path.existsSync(appDir + '/api/models/mysql')) {
                 tasks.push(this.initializeSql.bind(this.initializeMongo, appDir + '/api/models/mysql/'))
             }
 
@@ -76,26 +79,33 @@ module.exports = sails => {
                     sails.log.info(`Loaded Sequelize Model ::: ${modelName}`);
                     let classMethods = options.classMethods || [];
                     let instanceMethods = options.instanceMethods || [];
-                    classMethods.forEach(classMethod=>{
+                    let classMethodsList = [];
+                    classMethods.forEach(classMethod => {
                         model[classMethod.name] = classMethod;
+                        classMethodsList.push(classMethod.name);
                     });
-                    instanceMethods.forEach(instanceMethod=>{
+                    if (classMethodsList.length > 0) {
+                        sails.log.info('before advice registered for ' + modelName + ' with methods : ' + classMethodsList);
+                        meld.afterThrowing(model, classMethodsList, function (result) {
+                            let error = SequelizeErrorCodeTemplate.errorHandler(result);
+                            sails.log.info(modelName + ' returned exception : ' + error);
+                        });
+                    }
+                    instanceMethods.forEach(instanceMethod => {
                         model.prototype[instanceMethod.name] = instanceMethod;
                     });
                     global[modelName] = model;
-                    modelOptions.push({name: modelName, options: options});
+                    modelOptions.push({ name: modelName, options: options });
                 }
-                for(let i=0; i<modelOptions.length; i++){
+                for (let i = 0; i < modelOptions.length; i++) {
                     let modelAssociation = modelOptions[i].options.associations;
-                    if(modelAssociation && typeof modelAssociation === 'function'){
+                    if (modelAssociation && typeof modelAssociation === 'function') {
                         modelAssociation();
                     }
                 }
                 cb(null, {});
             });
         }
-
-
     };
 };
 
