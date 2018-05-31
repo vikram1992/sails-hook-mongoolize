@@ -86,9 +86,11 @@ module.exports = sails => {
                     });
                     if (classMethodsList.length > 0) {
                         sails.log.info('before advice registered for ' + modelName + ' with methods : ' + classMethodsList);
-                        meld.afterThrowing(model, classMethodsList, function (result) {
-                            let error = SequelizeErrorCodeTemplate.errorHandler(result);
-                            sails.log.info(modelName + ' returned exception : ' + error);
+                        meld.afterReturning(model, classMethodsList, function (result) {
+                            return result.catch((err) => {
+                                let error = SequelizeErrorCodeTemplate.errorHandler(err);
+                                sails.log.info(modelName + ' returned exception : ' + error);
+                            });
                         });
                     }
                     instanceMethods.forEach(instanceMethod => {
